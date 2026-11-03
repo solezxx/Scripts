@@ -1,6 +1,5 @@
 /**
- * PaulQuant 自动签到 - Loon 远程脚本
- * 兼容 Loon 新版 [Argument] 传参对象格式
+ * PaulQuant 自动签到 - Loon 终极兼容版
  */
 
 const CONFIG = {
@@ -9,32 +8,40 @@ const CONFIG = {
   timeout: 15000
 };
 
-// 兼容读取参数（支持对象、字符串等格式）
+// 强大的参数读取，兼容各种格式（对象、数组、JSON字符串、URL字符串）
 function readArg(name) {
+  // 优先从 Loon 底层持久化存储读（最稳）
+  const storeVal = $persistentStore.read(name);
+  if (storeVal) return storeVal;
+
   if (typeof $argument === "undefined" || !$argument) return "";
 
-  // 1. 如果是 Loon 新版 [Argument] 传过来的对象
+  // 如果是对象或数组
   if (typeof $argument === "object" && $argument !== null) {
-    // 如果是对象格式 {"pq_auth":"xxx", "pq_cookie":"yyy"}
-    if (!$argument.length && $argument[name] !== undefined) {
-      return $argument[name];
-    }
-    // 如果是数组格式 [{pq_auth},{pq_cookie}]（取决于插件写法）
-    if ($argument.length >= 2) {
-      return name === "pq_auth" ? $argument[0] : $argument[1];
-    }
+    if ($argument[name] !== undefined) return $argument[name];
+    if ($argument.length >= 2) return name === "pq_auth" ? $argument[0] : $argument[1];
   }
 
-  // 2. 如果是传统的字符串格式 "pq_auth=xxx&pq_cookie=yyy"
+  // 如果是字符串
   if (typeof $argument === "string") {
+    // 尝试解析 JSON 字符串
     try {
-      // 尝试用 URLSearchParams 解析
+      const parsed = JSON.parse($argument);
+      if (parsed[name] !== undefined) return parsed[name];
+    } catch (e) {}
+
+    // 尝试解析 URL 格式
+    try {
       const urlParams = new URLSearchParams($argument);
       const val = urlParams.get(name);
       if (val) return val;
     } catch (e) {}
 
-    // 字符串分割兜底
+    // 尝试逗号分隔 (Loon 有时候会传 "val1,val2")
+    const parts = $argument.split(",");
+    if (parts.length >= 2) return name === "pq_auth" ? parts[0].trim() : parts[1].trim();
+
+    // 尝试 & 分隔
     const map = {};
     $argument.split("&").forEach(function (kv) {
       const i = kv.indexOf("=");
@@ -46,15 +53,14 @@ function readArg(name) {
   return "";
 }
 
-const AUTH = readArg("pq_auth") || $persistentStore.read("pq_auth") || "";
-const COOKIE = readArg("pq_cookie") || $persistentStore.read("pq_cookie") || "";
+const AUTH = readArg("pq_auth") || "";
+const COOKIE = readArg("pq_cookie") || "";
 
 const HEADERS = {
   "Accept": "application/json",
   "Authorization": AUTH,
   "Cookie": COOKIE,
-  "User-Agent":
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148  PaulQuantApp/1.0",
+  "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148  PaulQuantApp/1.0",
   "Origin": "https://paulquant.com",
   "Referer": "https://paulquant.com/app",
   "Accept-Language": "zh-CN,zh-Hans;q=0.9"
@@ -90,12 +96,15 @@ function parse(data) {
 }
 
 function main() {
-  // 调试用，如果再次失败，可以在 Loon 日志里看到到底拿到了什么
-  console.log("AUTH: " + AUTH);
-  console.log("COOKIE: " + COOKIE);
+  console.log("====== 调试信息 ======");
+  console.log("$argument 类型: " + typeof $argument);
+  console.log("$argument 内容: " + JSON.stringify($argument));
+  console.log("解析出的 AUTH: " + AUTH);
+  console.log("解析出的 COOKIE: " + COOKIE);
+  console.log("======================");
 
   if (!AUTH || !COOKIE) {
-    notify("配置缺失", "请在插件中重新填写 pq_auth 与 pq_cookie");
+    notify("配置缺失", "AUTH或COOKIE为空，请检查插件变量名及内容");
     return $done();
   }
 
@@ -110,8 +119,7 @@ function main() {
       return $done();
     }
     if (before.today_signed) {
-      notify("今日已签到",
-        `连续 ${before.streak} 天，周期 ${before.cycle_day}/${before.cycle_days}`);
+      notify("今日已签到", `连续 ${before.streak} 天，周期 ${before.cycle_day}/${before.cycle_days}`);
       return $done();
     }
 
@@ -126,8 +134,7 @@ function main() {
         return $done();
       }
       if (after.ok && after.today_signed) {
-        notify("签到成功",
-          `连续 ${after.streak} 天，周期 ${after.cycle_day}/${after.cycle_days}，奖励 ${after.reward_days} 天`);
+        notify("签到成功", `连续 ${after.streak} 天，周期 ${after.cycle_day}/${after.cycle_days}，奖励 ${after.reward_days} 天`);
       } else {
         notify("签到未成功", String(data2).slice(0, 160));
       }
