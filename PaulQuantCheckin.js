@@ -1,5 +1,5 @@
 /**
- * PaulQuant 自动签到 - Loon 终极兼容版
+ * PaulQuant 自动签到 - 最终稳定版（修复 Cookie 带分号被截断的问题）
  */
 
 const CONFIG = {
@@ -8,53 +8,36 @@ const CONFIG = {
   timeout: 15000
 };
 
-// 强大的参数读取，兼容各种格式（对象、数组、JSON字符串、URL字符串）
-function readArg(name) {
-  // 优先从 Loon 底层持久化存储读（最稳）
-  const storeVal = $persistentStore.read(name);
-  if (storeVal) return storeVal;
+function getArg(name) {
+  // 1. 优先从 Loon 底层持久化存储读（UI填写的通常存这里，最稳）
+  const p = $persistentStore.read(name);
+  if (p) return p;
 
   if (typeof $argument === "undefined" || !$argument) return "";
 
-  // 如果是对象或数组
+  // 2. 如果是对象 {"pq_auth":"xxx", "pq_cookie":"yyy"}
   if (typeof $argument === "object" && $argument !== null) {
-    if ($argument[name] !== undefined) return $argument[name];
-    if ($argument.length >= 2) return name === "pq_auth" ? $argument[0] : $argument[1];
+    if ($argument[name]) return $argument[name];
   }
 
-  // 如果是字符串
+  // 3. 如果是字符串，Loon 会传成 "val1,val2" 的形式
   if (typeof $argument === "string") {
-    // 尝试解析 JSON 字符串
-    try {
-      const parsed = JSON.parse($argument);
-      if (parsed[name] !== undefined) return parsed[name];
-    } catch (e) {}
-
-    // 尝试解析 URL 格式
-    try {
-      const urlParams = new URLSearchParams($argument);
-      const val = urlParams.get(name);
-      if (val) return val;
-    } catch (e) {}
-
-    // 尝试逗号分隔 (Loon 有时候会传 "val1,val2")
-    const parts = $argument.split(",");
-    if (parts.length >= 2) return name === "pq_auth" ? parts[0].trim() : parts[1].trim();
-
-    // 尝试 & 分隔
-    const map = {};
-    $argument.split("&").forEach(function (kv) {
-      const i = kv.indexOf("=");
-      if (i > 0) map[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
-    });
-    return map[name] || "";
+    // 去掉可能存在的方括号
+    let argStr = $argument.replace(/^\[|\]$/g, '');
+    const parts = argStr.split(",");
+    
+    if (name === "pq_auth") {
+      return parts[0] ? parts[0].trim() : "";
+    } else if (name === "pq_cookie") {
+      // 关键修复：将逗号后面的内容完整合并，因为 Cookie 内部自带分号和等号，绝不能再次切分！
+      return parts.length >= 2 ? parts.slice(1).join(",").trim() : "";
+    }
   }
-
   return "";
 }
 
-const AUTH = readArg("pq_auth") || "";
-const COOKIE = readArg("pq_cookie") || "";
+const AUTH = getArg("pq_auth") || "";
+const COOKIE = getArg("pq_cookie") || "";
 
 const HEADERS = {
   "Accept": "application/json",
@@ -96,15 +79,13 @@ function parse(data) {
 }
 
 function main() {
+  // 调试打印
   console.log("====== 调试信息 ======");
-  console.log("$argument 类型: " + typeof $argument);
-  console.log("$argument 内容: " + JSON.stringify($argument));
-  console.log("解析出的 AUTH: " + AUTH);
-  console.log("解析出的 COOKIE: " + COOKIE);
+  console.log("解析出的 COOKIE 是否包含 user_id: " + (COOKIE.indexOf("paolo_user_id") > -1));
   console.log("======================");
 
   if (!AUTH || !COOKIE) {
-    notify("配置缺失", "AUTH或COOKIE为空，请检查插件变量名及内容");
+    notify("配置缺失", "AUTH或COOKIE为空，请确保在 Loon 界面中正确填写了内容并保存");
     return $done();
   }
 
