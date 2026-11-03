@@ -1,6 +1,6 @@
 /**
  * PaulQuant 自动签到 - Loon 远程脚本
- * argument: pq_auth, pq_cookie
+ * 兼容 Loon 新版 [Argument] 传参对象格式
  */
 
 const CONFIG = {
@@ -9,25 +9,45 @@ const CONFIG = {
   timeout: 15000
 };
 
+// 兼容读取参数（支持对象、字符串等格式）
 function readArg(name) {
   if (typeof $argument === "undefined" || !$argument) return "";
-  const map = {};
-  String($argument).split("&").forEach(function (kv) {
-    const i = kv.indexOf("=");
-    if (i > 0) map[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
-  });
-  return map[name] || "";
+
+  // 1. 如果是 Loon 新版 [Argument] 传过来的对象
+  if (typeof $argument === "object" && $argument !== null) {
+    // 如果是对象格式 {"pq_auth":"xxx", "pq_cookie":"yyy"}
+    if (!$argument.length && $argument[name] !== undefined) {
+      return $argument[name];
+    }
+    // 如果是数组格式 [{pq_auth},{pq_cookie}]（取决于插件写法）
+    if ($argument.length >= 2) {
+      return name === "pq_auth" ? $argument[0] : $argument[1];
+    }
+  }
+
+  // 2. 如果是传统的字符串格式 "pq_auth=xxx&pq_cookie=yyy"
+  if (typeof $argument === "string") {
+    try {
+      // 尝试用 URLSearchParams 解析
+      const urlParams = new URLSearchParams($argument);
+      const val = urlParams.get(name);
+      if (val) return val;
+    } catch (e) {}
+
+    // 字符串分割兜底
+    const map = {};
+    $argument.split("&").forEach(function (kv) {
+      const i = kv.indexOf("=");
+      if (i > 0) map[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
+    });
+    return map[name] || "";
+  }
+
+  return "";
 }
 
-const AUTH =
-  readArg("pq_auth") ||
-  $persistentStore.read("pq_auth") ||
-  "";
-
-const COOKIE =
-  readArg("pq_cookie") ||
-  $persistentStore.read("pq_cookie") ||
-  "";
+const AUTH = readArg("pq_auth") || $persistentStore.read("pq_auth") || "";
+const COOKIE = readArg("pq_cookie") || $persistentStore.read("pq_cookie") || "";
 
 const HEADERS = {
   "Accept": "application/json",
@@ -70,8 +90,12 @@ function parse(data) {
 }
 
 function main() {
+  // 调试用，如果再次失败，可以在 Loon 日志里看到到底拿到了什么
+  console.log("AUTH: " + AUTH);
+  console.log("COOKIE: " + COOKIE);
+
   if (!AUTH || !COOKIE) {
-    notify("配置缺失", "请在插件 argument 中填写 pq_auth 与 pq_cookie");
+    notify("配置缺失", "请在插件中重新填写 pq_auth 与 pq_cookie");
     return $done();
   }
 
