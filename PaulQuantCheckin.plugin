@@ -8,4 +8,4 @@ pq_auth = input,"",tag=Bearer Token,desc=填写完整的Authorization值
 pq_cookie = input,"",tag=Cookie,desc=填写完整的Cookie字符串
 
 [Script]
-cron "5 9 * * *" script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/PaulQuantCheckin.js, argument={pq_auth},{pq_cookie}, timeout=30, enable=true
+cron "5 9 * * *" script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/PaulQuantCheckin.js, argument=[{pq_auth},{pq_cookie}], timeout=30, enable=true

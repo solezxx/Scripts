@@ -8,36 +8,14 @@ const CONFIG = {
   timeout: 15000
 };
 
-function getArg(name) {
-  // 1. 优先从 Loon 底层持久化存储读（UI填写的通常存这里，最稳）
-  const p = $persistentStore.read(name);
-  if (p) return p;
+// Loon 插件界面中的参数通过 $argument 对象传入，不会自动写入 $persistentStore。
+const args =
+  typeof $argument === "object" && $argument !== null
+    ? $argument
+    : {};
 
-  if (typeof $argument === "undefined" || !$argument) return "";
-
-  // 2. 如果是对象 {"pq_auth":"xxx", "pq_cookie":"yyy"}
-  if (typeof $argument === "object" && $argument !== null) {
-    if ($argument[name]) return $argument[name];
-  }
-
-  // 3. 如果是字符串，Loon 会传成 "val1,val2" 的形式
-  if (typeof $argument === "string") {
-    // 去掉可能存在的方括号
-    let argStr = $argument.replace(/^\[|\]$/g, '');
-    const parts = argStr.split(",");
-    
-    if (name === "pq_auth") {
-      return parts[0] ? parts[0].trim() : "";
-    } else if (name === "pq_cookie") {
-      // 关键修复：将逗号后面的内容完整合并，因为 Cookie 内部自带分号和等号，绝不能再次切分！
-      return parts.length >= 2 ? parts.slice(1).join(",").trim() : "";
-    }
-  }
-  return "";
-}
-
-const AUTH = getArg("pq_auth") || "";
-const COOKIE = getArg("pq_cookie") || "";
+const AUTH = String(args.pq_auth || "").trim();
+const COOKIE = String(args.pq_cookie || "").trim();
 
 const HEADERS = {
   "Accept": "application/json",
@@ -79,9 +57,13 @@ function parse(data) {
 }
 
 function main() {
-  // 调试打印
+  // 仅打印参数类型和长度，避免在日志中泄露 Token 或 Cookie。
   console.log("====== 调试信息 ======");
-  console.log("解析出的 COOKIE 是否包含 user_id: " + (COOKIE.indexOf("paolo_user_id") > -1));
+  console.log("$argument 类型: " + typeof $argument);
+  console.log("$argument 字段: " + Object.keys(args).join(","));
+  console.log("AUTH 长度: " + AUTH.length);
+  console.log("COOKIE 长度: " + COOKIE.length);
+  console.log("COOKIE 包含 paolo_user_id: " + COOKIE.includes("paolo_user_id"));
   console.log("======================");
 
   if (!AUTH || !COOKIE) {
