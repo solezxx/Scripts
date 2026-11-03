@@ -4,4 +4,4 @@
 #!homepage=https://github.com/你的用户名/你的仓库
 
 [Script]
-PaulQuantCheckin = type=cron,cronexp="5 9 * * *",script-path=https://raw.githubusercontent.com/你的用户名/你的仓库/main/PaulQuantCheckin.js,timeout=30,argument=pq_auth=Bearer%20你的TOKEN&pq_cookie=paolo_session%3D你的SESSION%3B%20paolo_user_id%3D你的USERID,enable=true
+PaulQuantCheckin = type=cron,cronexp="5 9 * * *",script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/PaulQuantCheckin.js,timeout=30,argument=pq_auth=Bearer%20你的TOKEN&pq_cookie=paolo_session%3D你的SESSION%3B%20paolo_user_id%3D你的USERID,enable=true
