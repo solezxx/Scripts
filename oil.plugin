@@ -1,0 +1,9 @@
+#!name = 今日油价 · 调价趋势
+#!desc = 每日推送所在省份油价：调价后现价、上次调价时间与涨跌幅度、下次调价窗口与倒计时。argument 填省份名（不带“省”字，如 江苏 / 上海 / 内蒙古），也可写 prov=江苏&key=你的天行apikey 以使用自己的额度
+#!author = zxx
+#!homepage = https://github.com/solezxx/Scripts
+#!icon = https://raw.githubusercontent.com/deezertidal/private/main/icons/lifeindex.png
+#!date = 2026-11-06
+
+[Script]
+cron "7 7 7 ? * *" script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/oil.js, timeout=15, tag=油价调价提醒, argument="江苏"
