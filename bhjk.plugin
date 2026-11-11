@@ -1,12 +1,13 @@
 #!name = 薄荷健康会员解锁
-#!desc = 薄荷健康解锁会员与 AI 功能不限次（适配 App 15.x），单脚本多接口
+#!desc = 薄荷健康解锁会员、AI 不限次、去开屏广告（适配 App 15.x），单脚本多接口
 #!author = zxx
 #!homepage = https://github.com/solezxx/Scripts
 #!icon = https://one.boohee.cn/beauty/uploads/asserts/20200819114418/default_male_avatar.png
-#!date = 2026-11-03
+#!date = 2026-11-11
 
 [Script]
 http-response ^https?:\/\/api\.boohee\.com\/(app-interface\/.+\/user\/user_info|ai-interface\/.+\/frequency-limited) script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/bhjk.js, requires-body=true, max-size=-1, timeout=10, tag=薄荷健康会员
+http-response ^https?:\/\/status\.boohee\.com\/api\/v\d+\/app_square\/start_up script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/bhjk.js, requires-body=true, max-size=-1, timeout=10, tag=薄荷健康开屏
 
 [MITM]
-hostname = %APPEND% api.boohee.com
+hostname = %APPEND% api.boohee.com, status.boohee.com
