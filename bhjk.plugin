@@ -3,7 +3,7 @@
 #!author = zxx
 #!homepage = https://github.com/solezxx/Scripts
 #!icon = https://one.boohee.cn/beauty/uploads/asserts/20200819114418/default_male_avatar.png
-#!date = 2026-11-11
+#!date = 2026-11-13
 
 [Script]
 http-response ^https?:\/\/api\.boohee\.com\/(app-interface\/.+\/user\/user_info|ai-interface\/.+\/frequency-limited) script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/bhjk.js, requires-body=true, max-size=-1, timeout=10, tag=薄荷健康会员
@@ -14,19 +14,29 @@ http-response ^https?:\/\/api\.boohee\.com\/(app-interface\/.+\/user\/user_info|
 ^https?:\/\/bj\.boohee\.cn\/\d{4}\/op\/ url reject-img
 
 [Rule]
-# ——— 开屏广告：多 SDK 竞价，逐个封入口 ———
-# 2026-11-11 冷启动实测（1.5~2.2s 为开屏窗口）：
-#   快手联盟 p66-ad.adkwai.com 下发 750×1334 淘宝素材 ← 实际展示的就是这条
-#   优量汇 pgdt.ugdtimg.com 的 5 张素材已被既有规则 404
-#   win.gdt.qq.com 两次中标回执（仅回执，素材已拦）
+# ⚠️ 重要：Loon 插件的 [Rule] 是【追加在主配置规则之后】的，采用首条命中。
+#    若你主配置里存在 qq.com / gdtimg.com 之类更靠前的 DIRECT 规则，
+#    下面这些 REJECT 会被遮蔽而完全失效（实测 win.gdt.qq.com 返回真实 200 就是证据）。
+#    解决：把本段整体复制到主配置 [Rule] 的最顶部（见文件末尾说明）。
 
-# 快手联盟（本次开屏真正来源）
+# ——— 开屏广告：多 SDK 竞价，逐个封入口 ———
+# 2026-11-11/13 冷启动实测（1.5~2.2s 为开屏窗口）：
+#   快手联盟 p66-ad.adkwai.com 下发 750×1334 淘宝素材
+#   FancyDSP static.fancyapi.com 下发 720×1280 FILA 运动鞋素材 ← 用户实际看到的这条
+#   优量汇 pgdt.ugdtimg.com 素材已被既有规则 404
+#   win.gdt.qq.com 中标回执（仅回执，素材已拦）
+
+# FancyDSP 泛为（fancyapi.com 的 CNAME 就指向 lb.fancydsp.com，同一家）
+# static.fancyapi.com = 素材 CDN + ?jumpUrl= 落地页跳板，必须封
+# mpcfg.fancydsp.com = inAppBidding/v5 竞价配置接口
+DOMAIN-SUFFIX,fancyapi.com,REJECT
+DOMAIN-SUFFIX,fancydsp.com,REJECT
+
+# 快手联盟
 DOMAIN-SUFFIX,adkwai.com,REJECT
 DOMAIN-SUFFIX,kwaicdn.com,REJECT
 
 # 优量汇 GDT：SDK 主域 sdk.e.qq.com + 素材域 ugdtimg.com（不是 gdtimg.cn）
-# 注意：gdt.qq.com 若被主配置里更靠前的 qq.com,DIRECT 规则命中则不生效，
-#       需要把这三行挪到主配置 [Rule] 的 qq.com 规则之前
 DOMAIN,sdk.e.qq.com,REJECT
 DOMAIN-SUFFIX,gdt.qq.com,REJECT
 DOMAIN-SUFFIX,ugdtimg.com,REJECT
@@ -50,7 +60,6 @@ DOMAIN-SUFFIX,beizi.biz,REJECT
 DOMAIN-SUFFIX,adbiding.cn,REJECT
 DOMAIN-SUFFIX,1rtb.net,REJECT
 DOMAIN-SUFFIX,adgain.cn,REJECT
-DOMAIN-SUFFIX,fancydsp.com,REJECT
 
 [MITM]
 hostname = %APPEND% api.boohee.com, bj.boohee.cn
