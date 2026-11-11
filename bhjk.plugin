@@ -6,20 +6,24 @@
 #!date = 2026-11-11
 
 [Script]
-# 会员状态 / AI 频次
 http-response ^https?:\/\/api\.boohee\.com\/(app-interface\/.+\/user\/user_info|ai-interface\/.+\/frequency-limited) script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/bhjk.js, requires-body=true, max-size=-1, timeout=10, tag=薄荷健康会员
-# 开屏接口兜底：该接口目前恒返回空结构，仅兼容旧版本
-http-response ^https?:\/\/status\.boohee\.com\/api\/v\d+\/app_square\/start_up script-path=https://raw.githubusercontent.com/solezxx/Scripts/main/bhjk.js, requires-body=true, max-size=-1, timeout=10, tag=薄荷健康开屏
 
 [Rewrite]
-# 运营位广告图（弹窗/首页 banner 取自 bj.boohee.cn/年/op/），返回 1×1 透明图
+# 运营位图片（弹窗、首页 banner 都是 bj.boohee.cn/年/op/），返回 1×1 透明图
+# 若想保留首页运营 banner，删掉下面这一行即可，开屏不受影响
 ^https?:\/\/bj\.boohee\.cn\/\d{4}\/op\/ url reject-img
 
 [Rule]
-# 开屏由 AnyThink(TopOn) 广告 SDK 渲染，掐掉 SDK 域名即无开屏
-DOMAIN-SUFFIX,anythinktech.com,REJECT
-DOMAIN-SUFFIX,toponad.com,REJECT
-DOMAIN-SUFFIX,toponad.net,REJECT
+# 开屏广告：掌宇移动 SDK（zysdk2 v2.6.10.7），冷启动实测必发这三处
+#   cfgc.zztfly.com/v6/gcf        → 下发广告配置
+#   cdn-api-auth.zztfly.com/...   → 素材 CDN 鉴权
+#   sdklog.zhangyuyidong.cn/...   → 竞价回传，win_bidder=GDT（广点通胜出）
+DOMAIN-SUFFIX,zztfly.com,REJECT
+DOMAIN-SUFFIX,zhangyuyidong.cn,REJECT
+# 胜出方是广点通，素材与 SDK 域名一并掐掉
+DOMAIN-SUFFIX,gdt.qq.com,REJECT
+DOMAIN-SUFFIX,pgdt.gtimg.cn,REJECT
+DOMAIN-SUFFIX,pgdt.gtimg.com,REJECT
 
 [MITM]
-hostname = %APPEND% api.boohee.com, status.boohee.com, bj.boohee.cn
+hostname = %APPEND% api.boohee.com, bj.boohee.cn

@@ -1,7 +1,7 @@
 /******************************
 
-脚本功能：薄荷健康 会员解锁 + AI 不限次 + 去开屏广告（单文件版）
-           一个脚本按 URL 区分处理三套接口，插件只需对应规则
+脚本功能：薄荷健康 会员解锁 + AI 不限次（单文件版）
+           一个脚本按 URL 区分处理两套接口，插件只需对应规则
 
 接口 1：GET  https://api.boohee.com/app-interface/v1/user/user_info
         → 会员身份、到期时间、剩余天数、GLP-1 会员、积分会员、购买弹窗
@@ -9,10 +9,11 @@
 接口 2：POST https://api.boohee.com/ai-interface/v1/frequency-limited
         → is_vip_member、到期时间、不限次（max_count）、去掉推广入口
 
-接口 3：GET  https://status.boohee.com/api/v1/app_square/start_up_with_ad（旧版兜底）
-        → 开屏广告位；直接回写“无广告”结构（is_ad=false、start_up/pop_ads/video_ads 全空）
-        实测 15.10.x 该接口恒返回空结构，已不再下发广告；真正的开屏由 AnyThink(TopOn)
-        广告 SDK 渲染，只能靠插件 [Rule] 里 REJECT 掉 anythinktech.com / toponad.* 解决
+关于开屏广告（15.10.x 实测，勿再走 status.boohee.com）：
+        - status.boohee.com/api/v1/app_square/start_up_with_ad 恒返回空结构，已废弃；
+        - 开屏由掌宇移动广告 SDK（zysdk2）渲染，冷启动时经 cfgc.zztfly.com 拉配置、
+          cdn-api-auth.zztfly.com 取素材鉴权、sdklog.zhangyuyidong.cn 回传竞价结果；
+        - 该链路走二进制/加密体，脚本改不了，只能在插件 [Rule] 里按域名 REJECT。
 
 适用：Loon（Quantumult X / Surge 亦可直接用，规则写法不同）
 
@@ -33,29 +34,10 @@
   const UNLIMITED_COUNT = true; // AI 次数是否拉到最大
   const MAX_COUNT = 999999; // AI 可用次数
   const REMOVE_SALES_URL = true; // 是否去掉会员推广链接
-  const REMOVE_SPLASH_AD = true; // 是否去掉开屏广告
   const VERBOSE = false; // true 时弹通知，显示本次命中哪个接口
   /* ================================= */
 
-  // 开屏接口在“无广告”时服务端返回的原始结构，原样回写最稳妥，App 不会因字段缺失报错
-  const SPLASH_EMPTY =
-    '{"id":null,"start_up_url":null,"is_ad":false,"text":null,"link":null,' +
-    '"start_up":[{"id":null,"start_up_url":null,"is_ad":false,"text":null,"link":null,' +
-    '"click_slogan":"点击跳转至详情页","start_time":null,"end_time":null}],' +
-    '"pop_ads":[],"video_ads":[],"click_slogan":"点击跳转至详情页"}';
-  // 老版启动图接口（app_square/start_up）的空结构
-  const SPLASH_START_UP = '{"start_up_url":null}';
-
   const url = (typeof $request !== 'undefined' && $request && $request.url) || '';
-
-  /* 开屏广告：不走 JSON 解析，直接回写无广告结构
-     —— 广告响应可能夹带图片 base64、或字段随版本变化，解析再还原容易漏字段 */
-  if (REMOVE_SPLASH_AD && url.indexOf('/app_square/start_up') > -1) {
-    // 顺序不能反：start_up_with_ad 是 start_up 的超集，必须先判
-    const isEmptyAd = url.indexOf('start_up_with_ad') > -1;
-    if (VERBOSE) notify('薄荷健康', '开屏广告已拦截', isEmptyAd ? 'start_up_with_ad' : 'start_up');
-    return $done({ body: isEmptyAd ? SPLASH_EMPTY : SPLASH_START_UP });
-  }
 
   const body = typeof $response !== 'undefined' && $response ? $response.body : '';
   if (!body) {
