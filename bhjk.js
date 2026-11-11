@@ -9,9 +9,10 @@
 接口 2：POST https://api.boohee.com/ai-interface/v1/frequency-limited
         → is_vip_member、到期时间、不限次（max_count）、去掉推广入口
 
-接口 3：GET  https://status.boohee.com/api/v1/app_square/start_up_with_ad
+接口 3：GET  https://status.boohee.com/api/v1/app_square/start_up_with_ad（旧版兜底）
         → 开屏广告位；直接回写“无广告”结构（is_ad=false、start_up/pop_ads/video_ads 全空）
-        注意：此接口在 status.boohee.com，MITM 必须包含该域名，否则脚本不会触发
+        实测 15.10.x 该接口恒返回空结构，已不再下发广告；真正的开屏由 AnyThink(TopOn)
+        广告 SDK 渲染，只能靠插件 [Rule] 里 REJECT 掉 anythinktech.com / toponad.* 解决
 
 适用：Loon（Quantumult X / Surge 亦可直接用，规则写法不同）
 
