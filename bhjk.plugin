@@ -14,16 +14,43 @@ http-response ^https?:\/\/api\.boohee\.com\/(app-interface\/.+\/user\/user_info|
 ^https?:\/\/bj\.boohee\.cn\/\d{4}\/op\/ url reject-img
 
 [Rule]
-# 开屏广告：掌宇移动 SDK（zysdk2 v2.6.10.7），冷启动实测必发这三处
-#   cfgc.zztfly.com/v6/gcf        → 下发广告配置
-#   cdn-api-auth.zztfly.com/...   → 素材 CDN 鉴权
-#   sdklog.zhangyuyidong.cn/...   → 竞价回传，win_bidder=GDT（广点通胜出）
-DOMAIN-SUFFIX,zztfly.com,REJECT
-DOMAIN-SUFFIX,zhangyuyidong.cn,REJECT
-# 胜出方是广点通，素材与 SDK 域名一并掐掉
+# ——— 开屏广告：多 SDK 竞价，逐个封入口 ———
+# 2026-11-11 冷启动实测（1.5~2.2s 为开屏窗口）：
+#   快手联盟 p66-ad.adkwai.com 下发 750×1334 淘宝素材 ← 实际展示的就是这条
+#   优量汇 pgdt.ugdtimg.com 的 5 张素材已被既有规则 404
+#   win.gdt.qq.com 两次中标回执（仅回执，素材已拦）
+
+# 快手联盟（本次开屏真正来源）
+DOMAIN-SUFFIX,adkwai.com,REJECT
+DOMAIN-SUFFIX,kwaicdn.com,REJECT
+
+# 优量汇 GDT：SDK 主域 sdk.e.qq.com + 素材域 ugdtimg.com（不是 gdtimg.cn）
+# 注意：gdt.qq.com 若被主配置里更靠前的 qq.com,DIRECT 规则命中则不生效，
+#       需要把这三行挪到主配置 [Rule] 的 qq.com 规则之前
+DOMAIN,sdk.e.qq.com,REJECT
 DOMAIN-SUFFIX,gdt.qq.com,REJECT
-DOMAIN-SUFFIX,pgdt.gtimg.cn,REJECT
-DOMAIN-SUFFIX,pgdt.gtimg.com,REJECT
+DOMAIN-SUFFIX,ugdtimg.com,REJECT
+DOMAIN-SUFFIX,gdtimg.com,REJECT
+
+# 穿山甲 / GroMore（0.6~1.9s 反复 get_ads、mediation exchange）
+DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-b.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao1.com,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
+DOMAIN-SUFFIX,ctobsnssdk.com,REJECT
+
+# 掌宇（旧 zztfly，新域名 flysleep）
+DOMAIN-SUFFIX,zztfly.com,REJECT
+DOMAIN-SUFFIX,flysleep.cn,REJECT
+DOMAIN-SUFFIX,zhangyuyidong.cn,REJECT
+
+# TopOn / AnyThink、倍孜、其它竞价源
+DOMAIN-SUFFIX,anythinktech.com,REJECT
+DOMAIN-SUFFIX,beizi.biz,REJECT
+DOMAIN-SUFFIX,adbiding.cn,REJECT
+DOMAIN-SUFFIX,1rtb.net,REJECT
+DOMAIN-SUFFIX,adgain.cn,REJECT
+DOMAIN-SUFFIX,fancydsp.com,REJECT
 
 [MITM]
 hostname = %APPEND% api.boohee.com, bj.boohee.cn

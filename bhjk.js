@@ -11,9 +11,9 @@
 
 关于开屏广告（15.10.x 实测，勿再走 status.boohee.com）：
         - status.boohee.com/api/v1/app_square/start_up_with_ad 恒返回空结构，已废弃；
-        - 开屏由掌宇移动广告 SDK（zysdk2）渲染，冷启动时经 cfgc.zztfly.com 拉配置、
-          cdn-api-auth.zztfly.com 取素材鉴权、sdklog.zhangyuyidong.cn 回传竞价结果；
-        - 该链路走二进制/加密体，脚本改不了，只能在插件 [Rule] 里按域名 REJECT。
+        - 开屏是多 SDK 竞价：穿山甲/GroMore、优量汇 GDT、快手联盟、TopOn、倍孜、掌宇同时出价，
+          冷启动 1.5~2.2 秒内下载素材，最终展示哪家不确定；
+        - 这些流量都是二进制/加密体，脚本改不了，只能在插件 [Rule] 里按域名 REJECT。
 
 适用：Loon（Quantumult X / Surge 亦可直接用，规则写法不同）
 
